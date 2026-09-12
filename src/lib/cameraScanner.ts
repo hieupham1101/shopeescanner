@@ -41,7 +41,7 @@ export async function startCamera(
         } catch {
           if (!stopped)
             onError(
-              "Camera decoding interrupted. Restart the camera or use USB/manual input.",
+              "Camera bị gián đoạn. Mở lại camera, dùng máy quét USB hoặc nhập mã thủ công.",
             );
         }
         if (!stopped) timer = setTimeout(loop, 100);

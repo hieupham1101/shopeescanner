@@ -193,7 +193,7 @@ describe("Excel import", () => {
   it("missing tracking header fails clearly; optional fields can be absent", () => {
     expect(() =>
       parseShopeeFile(workbook([["wrong"], ["ABC"]]), "bad.xlsx"),
-    ).toThrow("tracking-code column was not found");
+    ).toThrow("Không tìm thấy cột Mã vận đơn");
     expect(
       parseShopeeFile(
         workbook([

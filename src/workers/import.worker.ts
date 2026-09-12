@@ -9,7 +9,7 @@ self.onmessage = (
   } catch (error) {
     self.postMessage({
       error:
-        error instanceof Error ? error.message : "Unable to read Excel file.",
+        error instanceof Error ? error.message : "Không đọc được tệp Excel.",
     });
   }
 };

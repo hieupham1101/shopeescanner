@@ -53,46 +53,46 @@ test("import, USB, all statuses, reload, history choices, settings and offline",
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: /Import Shopee Excel/ }),
+    page.getByRole("button", { name: /Nhập Excel Shopee/ }),
   ).toBeEnabled();
   await page.screenshot({
     path: "tests/artifacts/desktop.png",
     fullPage: true,
   });
   await page.locator("input[type=file]").setInputFiles(fixture());
-  await expect(page.getByText("DATA LOADED")).toBeVisible();
+  await expect(page.getByText("ĐÃ NHẬP DỮ LIỆU")).toBeVisible();
   await page.locator("body").click({ position: { x: 10, y: 100 } });
   await page.keyboard.type("SPX000001");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("status").getByText("OK to hand over"),
+    page.getByRole("status").getByText("Được bàn giao"),
   ).toBeVisible();
   await page.keyboard.type("SPX000001");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("status").getByText("Duplicate parcel"),
+    page.getByRole("status").getByText("Đơn trùng"),
   ).toBeVisible();
   await expect(
-    page.getByRole("status").getByText(/Scan count: 2/),
+    page.getByRole("status").getByText(/Số lần quét: 2/),
   ).toBeVisible();
   for (const [code, title] of [
-    ["SPX000002", "Order cancelled"],
-    ["SPX000003", "Already picked up"],
-    ["MISSING", "Order not found"],
+    ["SPX000002", "Đơn huỷ"],
+    ["SPX000003", "Đã lấy hàng"],
+    ["MISSING", "Không tìm thấy"],
   ]) {
     await page.keyboard.type(code);
     await page.keyboard.press("Enter");
     await expect(page.getByRole("status").getByText(title)).toBeVisible();
   }
   await page.reload();
-  await expect(page.getByText("DATA LOADED")).toBeVisible();
-  await page.getByLabel("Manual entry").fill("SPX000001");
-  await page.getByLabel("Manual entry").press("Enter");
+  await expect(page.getByText("ĐÃ NHẬP DỮ LIỆU")).toBeVisible();
+  await page.getByLabel("Nhập mã thủ công").fill("SPX000001");
+  await page.getByLabel("Nhập mã thủ công").press("Enter");
   await expect(
-    page.getByRole("status").getByText("Duplicate parcel"),
+    page.getByRole("status").getByText("Đơn trùng"),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Cài đặt", exact: true }).click();
   await page.getByRole("switch").click();
   await expect(page.getByRole("switch")).toHaveAttribute(
     "aria-checked",
@@ -101,31 +101,31 @@ test("import, USB, all statuses, reload, history choices, settings and offline",
   await page.keyboard.press("Escape");
   await page.locator("input[type=file]").setInputFiles(fixture());
   await page
-    .getByRole("button", { name: /Keep existing scan history/ })
+    .getByRole("button", { name: /Giữ lịch sử quét hiện có/ })
     .click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await page.getByLabel("Manual entry").fill("SPX000001");
-  await page.getByLabel("Manual entry").press("Enter");
+  await page.getByLabel("Nhập mã thủ công").fill("SPX000001");
+  await page.getByLabel("Nhập mã thủ công").press("Enter");
   await expect(
-    page.getByRole("status").getByText("Duplicate parcel"),
+    page.getByRole("status").getByText("Đơn trùng"),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: /View all history/ }).click();
-  await expect(page.getByText("Complete scan history")).toBeVisible();
+  await page.getByRole("button", { name: /Xem toàn bộ/ }).click();
+  await expect(page.getByText("Toàn bộ lịch sử quét")).toBeVisible();
   await page
-    .getByRole("button", { name: "Reset scan history", exact: true })
+    .getByRole("button", { name: "Xoá lịch sử quét", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Delete history and start fresh" })
+    .getByRole("button", { name: "Xoá lịch sử và bắt đầu lại" })
     .click();
-  await expect(page.getByText("Your checks will appear here")).toBeVisible();
+  await expect(page.getByText("Lịch sử quét sẽ xuất hiện ở đây")).toBeVisible();
   await page
-    .getByRole("button", { name: "Scanning station", exact: true })
+    .getByRole("button", { name: "Quét đơn hàng", exact: true })
     .click();
-  await page.getByLabel("Manual entry").fill("SPX000001");
-  await page.getByLabel("Manual entry").press("Enter");
+  await page.getByLabel("Nhập mã thủ công").fill("SPX000001");
+  await page.getByLabel("Nhập mã thủ công").press("Enter");
   await expect(
-    page.getByRole("status").getByText("OK to hand over"),
+    page.getByRole("status").getByText("Được bàn giao"),
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await page.evaluate(async () => {
@@ -133,11 +133,11 @@ test("import, USB, all statuses, reload, history choices, settings and offline",
   });
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByText("DATA LOADED")).toBeVisible();
-  await page.getByLabel("Manual entry").fill("SPX000001");
-  await page.getByLabel("Manual entry").press("Enter");
+  await expect(page.getByText("ĐÃ NHẬP DỮ LIỆU")).toBeVisible();
+  await page.getByLabel("Nhập mã thủ công").fill("SPX000001");
+  await page.getByLabel("Nhập mã thủ công").press("Enter");
   await expect(
-    page.getByRole("status").getByText("Duplicate parcel"),
+    page.getByRole("status").getByText("Đơn trùng"),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -154,7 +154,7 @@ test("mobile layout, import failure, camera denial and sound tests", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: /Import Shopee Excel/ }),
+    page.getByRole("button", { name: /Nhập Excel Shopee/ }),
   ).toBeEnabled();
   await page.screenshot({ path: "tests/artifacts/mobile.png", fullPage: true });
   expect(
@@ -173,15 +173,15 @@ test("mobile layout, import failure, camera denial and sound tests", async ({
     buffer: XLSX.write(bad, { type: "buffer", bookType: "xlsx" }),
   });
   await expect(page.locator(".error-banner")).toContainText(
-    "tracking-code column was not found",
+    "Không tìm thấy cột Mã vận đơn",
   );
   await page.locator("input[type=file]").setInputFiles(fixture());
-  await expect(page.getByText("DATA LOADED")).toBeVisible();
-  await page.getByRole("button", { name: "Use camera", exact: true }).click();
-  await expect(page.getByText(/Camera unavailable/)).toBeVisible();
-  await page.getByRole("button", { name: /Test scanner sounds/ }).click();
-  await page.getByRole("button", { name: "Test OK Sound" }).click();
-  await page.getByRole("button", { name: "Test Error Sound" }).click();
+  await expect(page.getByText("ĐÃ NHẬP DỮ LIỆU")).toBeVisible();
+  await page.getByRole("button", { name: "Mở camera", exact: true }).click();
+  await expect(page.getByText(/Không mở được camera/)).toBeVisible();
+  await page.getByRole("button", { name: /Thử âm thanh máy quét/ }).click();
+  await page.getByRole("button", { name: "Thử: Có" }).click();
+  await page.getByRole("button", { name: "Thử âm cảnh báo" }).click();
   await page.keyboard.press("Escape");
 });
 
@@ -230,16 +230,16 @@ test("ZXing camera fallback decodes a QR video stream without frame duplicates",
   );
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: /Import Shopee Excel/ }),
+    page.getByRole("button", { name: /Nhập Excel Shopee/ }),
   ).toBeEnabled();
   await page.locator("input[type=file]").setInputFiles(fixture());
-  await expect(page.getByText("DATA LOADED")).toBeVisible();
-  await page.getByRole("button", { name: "Use camera", exact: true }).click();
+  await expect(page.getByText("ĐÃ NHẬP DỮ LIỆU")).toBeVisible();
+  await page.getByRole("button", { name: "Mở camera", exact: true }).click();
   await expect(
-    page.getByRole("status").getByText("OK to hand over"),
+    page.getByRole("status").getByText("Được bàn giao"),
   ).toBeVisible();
   await expect(page.getByRole("status")).not.toBeVisible({ timeout: 5000 });
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await expect(page.locator(".stat-DUPLICATE strong")).toHaveText("0");
-  await page.getByRole("button", { name: "Stop camera", exact: true }).click();
+  await page.getByRole("button", { name: "Tắt camera", exact: true }).click();
 });

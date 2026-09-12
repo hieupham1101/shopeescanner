@@ -834,7 +834,8 @@ footer b {
   border: 1px solid #455446;
   border-radius: 14px;
   padding: 32px;
-  width: 480px;
+  width: min(480px, calc(100vw - 40px));
+  min-width: 0;
   max-width: 100%;
   max-height: 90vh;
   overflow: auto;
@@ -1273,4 +1274,30 @@ input[type="range"] {
     width: 65px;
     height: 65px;
   }
+}
+
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1px solid #35463c;
+  border-radius: 12px;
+  background: #17231b;
+}
+.install-banner > svg { flex-shrink: 0; color: #b8e986; }
+.install-banner > div { flex: 1; }
+.install-banner strong { font-size: 14px; }
+.install-banner p { margin: 5px 0 0; font-size: 12px; color: #a7b1aa; line-height: 1.5; }
+@media (max-width: 600px) {
+  .install-banner { flex-wrap: wrap; padding: 14px; }
+  .install-banner > div { min-width: 190px; }
+  .install-banner .button { width: 100%; white-space: normal; }
+  .manual-form input { font-size: 16px; min-width: 0; }
+  .topbar { flex-wrap: wrap; gap: 12px; }
+  .workspace-tabs { flex-wrap: wrap; gap: 10px; }
+  .history-heading { flex-wrap: wrap; gap: 12px; }
+  .scanner-bottom { flex-wrap: wrap; gap: 10px; height: auto; min-height: 64px; padding: 12px; }
+  .modal { max-height: 85dvh; overflow-y: auto; }
 }

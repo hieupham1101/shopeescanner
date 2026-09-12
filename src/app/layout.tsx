@@ -2,14 +2,14 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "../index.css";
 export const metadata: Metadata = {
-  title: "Shopee Pack Check — Final check before handover",
-  description: "Fast, local parcel verification for Shopee shipping labels.",
+  title: "Kiểm đơn Shopee — Kiểm tra trước khi bàn giao",
+  description: "Quét mã vận đơn Shopee, kiểm tra đơn trùng và trạng thái trước khi bàn giao.",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/icon.svg", apple: "/icon-192.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Pack Check",
+    title: "Kiểm đơn",
   },
 };
 export const viewport: Viewport = {
@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>{children}</body>
     </html>
   );

@@ -25,7 +25,7 @@ export default function Scanner({
       })
       .catch(() => {
         setError(
-          "Camera unavailable. Allow camera access over HTTPS, or use a USB scanner or manual entry.",
+          "Không mở được camera. Cho phép truy cập camera trên kết nối HTTPS, hoặc dùng máy quét USB hay nhập mã thủ công.",
         );
         setActive(false);
       });
@@ -38,10 +38,10 @@ export default function Scanner({
     <section className="scanner-panel">
       <div className="panel-heading">
         <span>
-          <ScanLine size={17} /> SCANNING STATION
+          <ScanLine size={17} /> QUÉT ĐƠN HÀNG
         </span>
         <span className="live-label">
-          <i /> {enabled ? "READY FOR SCAN" : "AWAITING IMPORT"}
+          <i /> {enabled ? "SẴN SÀNG QUÉT" : "CHƯA SẴN SÀNG"}
         </span>
       </div>
       <div className="scan-stage">
@@ -63,24 +63,23 @@ export default function Scanner({
           <div className="scan-instruction">
             <h2>
               {enabled
-                ? "Ready for the next parcel"
-                : "Your final check. Every parcel."}
+                ? "Sẵn sàng quét kiện tiếp theo"
+                : "Kiểm tra từng kiện trước khi giao"}
             </h2>
             <p>
               {enabled
-                ? "Scan the tracking QR code or barcode on the shipping label."
-                : "Import your Shopee orders to start checking shipping labels."}
+                ? "Quét mã QR hoặc mã vạch vận đơn trên nhãn vận chuyển."
+                : "Nhập đơn hàng Shopee để bắt đầu kiểm tra vận đơn."}
             </p>
           </div>
         )}
         <div className="scanner-mode">
-          <Usb size={15} /> USB scanner ready <span>•</span> No click needed
-          between scans
+          <Usb size={15} /> Hỗ trợ máy quét USB <span>•</span> Quét liên tục không cần bấm chuột
         </div>
       </div>
       <div className="scanner-bottom">
         <span>
-          <span className="keycap">↵</span> Scan. Listen. Hand over.
+          <span className="keycap">↵</span> Quét mã. Nghe kết quả. Bàn giao.
         </span>
         <button
           className="button secondary"
@@ -91,7 +90,7 @@ export default function Scanner({
           }}
         >
           {active ? <CameraOff size={16} /> : <Camera size={16} />}{" "}
-          {active ? "Stop camera" : "Use camera"}
+          {active ? "Tắt camera" : "Mở camera"}
         </button>
       </div>
       {error && <p className="inline-error">{error}</p>}

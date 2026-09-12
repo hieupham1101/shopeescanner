@@ -1,1 +1,26 @@
-{"name":"Shopee Pack Check","short_name":"Pack Check","description":"Final check before handover","start_url":"/","display":"standalone","background_color":"#101312","theme_color":"#101312","icons":[{"src":"/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+  "name": "Kiểm đơn Shopee",
+  "short_name": "Kiểm đơn",
+  "description": "Kiểm tra đơn Shopee trước khi bàn giao",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101312",
+  "theme_color": "#101312",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "vi",
+  "id": "/",
+  "scope": "/"
+}

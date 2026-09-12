@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   PackageCheck,
   Settings2,
+  Smartphone,
   ShieldCheck,
   Upload,
   Volume2,
@@ -39,8 +40,47 @@ import {
 import { ScanProcessor } from "../lib/scanProcessor";
 import { attachKeyboardScanner } from "../lib/keyboardScanner";
 import * as audio from "../lib/scannerAudio";
-const number = (n: number) => n.toLocaleString();
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
+const number = (n: number) => n.toLocaleString("vi-VN");
 export default function PackCheck() {
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  useEffect(() => {
+    const display = window.matchMedia("(display-mode: standalone)");
+    const update = () => setInstalled(display.matches || !!(navigator as Navigator & { standalone?: boolean }).standalone);
+    const capture = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const complete = () => { setInstalled(true); setInstallPrompt(null); setDialog(null); };
+    update();
+    display.addEventListener("change", update);
+    window.addEventListener("beforeinstallprompt", capture);
+    window.addEventListener("appinstalled", complete);
+    return () => {
+      display.removeEventListener("change", update);
+      window.removeEventListener("beforeinstallprompt", capture);
+      window.removeEventListener("appinstalled", complete);
+    };
+  }, []);
+  async function installApp() {
+    if (!installPrompt) return;
+    setInstalling(true);
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      setInstallPrompt(null);
+      if (choice.outcome === "accepted") setDialog(null);
+    } catch {
+      setInstallPrompt(null);
+    } finally {
+      setInstalling(false);
+    }
+  }
   const [metadata, setMetadata] = useState<ImportMetadata>();
   const [counters, setCounters] = useState<Counters>(emptyCounters);
   const [history, setHistory] = useState<ScanRecord[]>([]);
@@ -49,7 +89,7 @@ export default function PackCheck() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [dialog, setDialog] = useState<
-    "settings" | "import" | "reset" | "help" | null
+    "settings" | "import" | "reset" | "help" | "install" | null
   >(null);
   const [pending, setPending] = useState<Dataset>();
   const [sound, setSound] = useState(true),
@@ -70,7 +110,7 @@ export default function PackCheck() {
     setError(
       e instanceof Error
         ? e.message
-        : "Sound unavailable. Open settings and test audio.",
+        : "Không phát được âm thanh. Mở cài đặt để thử lại.",
     );
   useEffect(() => {
     let active = true;
@@ -86,7 +126,7 @@ export default function PackCheck() {
       })
       .catch(() =>
         setError(
-          "Không kết nối được database. Kiểm tra mạng rồi tải lại trang.",
+          "Không kết nối được cơ sở dữ liệu. Kiểm tra mạng rồi tải lại trang.",
         ),
       );
     try {
@@ -115,7 +155,7 @@ export default function PackCheck() {
         .register("/sw.js")
         .catch(() =>
           setError(
-            "Offline setup failed. Keep this page online and reload to retry.",
+            "Chưa thiết lập được ứng dụng trên thiết bị. Giữ kết nối mạng và tải lại trang.",
           ),
         );
     return () => {
@@ -146,9 +186,9 @@ export default function PackCheck() {
           else
             void readHistory(page * 50, 50)
               .then(setHistory)
-              .catch(() => setError("Could not refresh history."));
+              .catch(() => setError("Không làm mới được lịch sử."));
           const ok = saved.result.status === "ACCEPTED";
-          void (ok ? audio.playSuccess() : audio.playError()).catch(audioError);
+          void audio.playResult(saved.result.status).catch(audioError);
           try {
             navigator.vibrate?.(ok ? 35 : [100, 70, 100]);
           } catch {
@@ -166,7 +206,7 @@ export default function PackCheck() {
           blocked.current = true;
           setResult(null);
           setError(
-            "DỪNG BÀN GIAO — chưa xác nhận lưu trên database. Kiểm tra kết nối rồi tải lại trước khi quét tiếp.",
+            "DỪNG BÀN GIAO — chưa xác nhận lưu trên cơ sở dữ liệu. Kiểm tra kết nối rồi tải lại trước khi quét tiếp.",
           );
           void audio.playError().catch(audioError);
         });
@@ -256,7 +296,7 @@ export default function PackCheck() {
       view === "history" ? 50 : 20,
     )
       .then(setHistory)
-      .catch(() => setError("Could not load scan history."));
+      .catch(() => setError("Không tải được lịch sử quét."));
   }, [view, page]);
   useEffect(() => {
     if (!ready) return;
@@ -295,7 +335,7 @@ export default function PackCheck() {
       void navigator.storage?.persist?.();
     } catch {
       setError(
-        "Chưa xác nhận nhập file vào database. Kiểm tra kết nối và tải lại để xem dữ liệu đã lưu.",
+        "Chưa xác nhận nhập tệp vào cơ sở dữ liệu. Kiểm tra kết nối và tải lại để xem dữ liệu đã lưu.",
       );
     } finally {
       setBusy(false);
@@ -303,7 +343,7 @@ export default function PackCheck() {
   }
   async function importFile(file: File) {
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Choose a Shopee .xlsx Excel export.");
+      setError("Vui lòng chọn tệp Excel .xlsx xuất từ Shopee.");
       return;
     }
     setBusy(true);
@@ -324,7 +364,7 @@ export default function PackCheck() {
           worker.terminate();
           reject(
             new Error(
-              "Excel parsing failed. Check that the file is a valid Shopee export.",
+              "Không đọc được Excel. Kiểm tra tệp xuất từ Shopee.",
             ),
           );
         };
@@ -335,7 +375,7 @@ export default function PackCheck() {
         setDialog("import");
       } else await commitImport(data, false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to import this file.");
+      setError(e instanceof Error ? e.message : "Không nhập được tệp này.");
     } finally {
       setBusy(false);
     }
@@ -351,7 +391,7 @@ export default function PackCheck() {
         JSON.stringify({ enabled, volume: level }),
       );
     } catch {
-      setError("Audio settings could not be saved on this device.");
+      setError("Không lưu được cài đặt âm thanh trên thiết bị này.");
     }
   }
   async function clearHistory() {
@@ -366,7 +406,7 @@ export default function PackCheck() {
       setPage(0);
       setDialog(null);
     } catch {
-      setError("Could not reset history. Please try again.");
+      setError("Không xoá được lịch sử. Vui lòng thử lại.");
     } finally {
       setBusy(false);
     }
@@ -380,54 +420,61 @@ export default function PackCheck() {
             <PackageCheck size={24} />
           </span>
           <span>
-            SHOPEE <b>PACK CHECK</b>
-            <small>Final check before handover</small>
+            SHOPEE <b>KIỂM ĐƠN</b>
+            <small>Kiểm tra trước khi bàn giao</small>
           </span>
         </a>
         <div className="top-actions">
           <span className="local-badge">
-            <LockKeyhole size={13} /> Shared database
+            <LockKeyhole size={13} /> Dữ liệu dùng chung
           </span>
           <button
             className="icon-button"
-            aria-label="Help"
+            aria-label="Hướng dẫn"
             onClick={() => setDialog("help")}
           >
             <CircleHelp size={19} />
           </button>
           <button
-            aria-label="Settings"
+            aria-label="Cài đặt"
             className="settings-button"
             onClick={() => setDialog("settings")}
           >
             <Settings2 size={17} />
-            <span>Settings</span>
+            <span>Cài đặt</span>
           </button>
         </div>
       </header>
       <main>
         <div className="page-heading">
           <div>
-            <div className="eyebrow">DISPATCH CONTROL</div>
+            <div className="eyebrow">KIỂM TRA BÀN GIAO</div>
             <h1>
-              Every parcel. Double checked<span>.</span>
+              Kiểm đúng đơn. Giao đúng kiện<span>.</span>
             </h1>
-            <p>One scan. A clear answer. Confident handovers.</p>
+            <p>Quét mã vận đơn, kiểm tra kết quả, yên tâm bàn giao.</p>
           </div>
           <div className="station-status">
-            <i /> {metadata ? "Station ready" : "Set up your station"}
+            <i /> {metadata ? "Sẵn sàng quét" : "Nhập tệp để bắt đầu"}
             <small>
               {ready
                 ? "Đồng bộ máy tính và điện thoại"
-                : "Connecting to database…"}
+                : "Đang kết nối dữ liệu…"}
             </small>
           </div>
         </div>
-        {checking && <div className="error-banner" aria-live="polite">ĐANG XÁC NHẬN VỚI DATABASE — CHƯA BÀN GIAO</div>}
+        {!installed && (
+          <section className="install-banner">
+            <Smartphone size={22} aria-hidden="true" />
+            <div><strong>Mở nhanh từ màn hình chính</strong><p>Thêm Kiểm đơn vào điện thoại để mở và quét đơn thuận tiện hơn.</p></div>
+            <button className="button secondary" onClick={() => setDialog("install")}>Thêm vào màn hình chính</button>
+          </section>
+        )}
+        {checking && <div className="error-banner" aria-live="polite">ĐANG XÁC NHẬN VỚI MÁY CHỦ — CHƯA BÀN GIAO</div>}
         {error && (
           <div className="error-banner" role="alert">
             {error}
-            <button aria-label="Dismiss message" onClick={() => setError("")}>
+            <button aria-label="Đóng thông báo" onClick={() => setError("")}>
               <X size={17} />
             </button>
           </div>
@@ -449,13 +496,13 @@ export default function PackCheck() {
           </div>
           <div className="file-detail">
             <div className="file-title">
-              {metadata?.filename || "Connect your Shopee order file"}{" "}
-              {metadata && <span className="data-badge">DATA LOADED</span>}
+              {metadata?.filename || "Chọn tệp đơn hàng Shopee"}{" "}
+              {metadata && <span className="data-badge">ĐÃ NHẬP DỮ LIỆU</span>}
             </div>
             <p>
               {metadata
-                ? `${number(metadata.total)} parcels · Imported ${new Date(metadata.importedAt).toLocaleString()} · ${metadata.skipped} rows without tracking · ${metadata.merged} repeated rows merged`
-                : "Import an Excel export to check order status and catch duplicate parcels."}
+                ? `${number(metadata.total)} kiện · Nhập lúc ${new Date(metadata.importedAt).toLocaleString("vi-VN")} · ${metadata.skipped} dòng thiếu mã vận đơn · ${metadata.merged} dòng trùng đã gộp`
+                : "Nhập tệp Excel để kiểm tra trạng thái đơn và phát hiện kiện trùng."}
             </p>
           </div>
           <button
@@ -465,32 +512,32 @@ export default function PackCheck() {
           >
             <Upload size={16} />
             {busy
-              ? "Importing…"
+              ? "Đang nhập…"
               : metadata
-                ? "Change Shopee File"
-                : "Import Shopee Excel"}
+                ? "Đổi tệp Shopee"
+                : "Nhập Excel Shopee"}
             <span className="button-key">F4</span>
           </button>
         </section>
         {metadata && (
           <div className="import-summary">
-            <span>IN YOUR FILE</span>
+            <span>TRONG TỆP</span>
             <b>
-              {number(metadata.waiting)} <small>waiting to ship</small>
+              {number(metadata.waiting)} <small>chờ giao hàng</small>
             </b>
             <b>
-              {number(metadata.shipping)} <small>shipping / in delivery</small>
+              {number(metadata.shipping)} <small>đang giao hàng</small>
             </b>
             <b>
-              {number(metadata.cancelled)} <small>cancelled</small>
+              {number(metadata.cancelled)} <small>đã huỷ</small>
             </b>
           </div>
         )}
         <div className="stats-grid">
           <div className="stat">
-            <span>Total orders</span>
+            <span>Tổng đơn hàng</span>
             <strong>{number(metadata?.total ?? 0)}</strong>
-            <small>In current Shopee file</small>
+            <small>Trong tệp Shopee hiện tại</small>
           </div>
           {(
             [
@@ -506,19 +553,19 @@ export default function PackCheck() {
                 <i />
                 {
                   {
-                    ACCEPTED: "Accepted",
-                    DUPLICATE: "Duplicate",
-                    CANCELLED: "Cancelled",
-                    PICKED_UP: "Already picked up",
-                    UNKNOWN: "Not found",
+                    ACCEPTED: "Được bàn giao",
+                    DUPLICATE: "Đơn trùng",
+                    CANCELLED: "Đơn huỷ",
+                    PICKED_UP: "Đã lấy hàng",
+                    UNKNOWN: "Không tìm thấy",
                   }[status]
                 }
               </span>
               <strong>{number(counters[status])}</strong>
               <small>
                 {status === "ACCEPTED"
-                  ? "Cleared for handover"
-                  : "Parcels stopped"}
+                  ? "Đủ điều kiện bàn giao"
+                  : "Kiện cần giữ lại"}
               </small>
             </div>
           ))}
@@ -532,7 +579,7 @@ export default function PackCheck() {
                 setPage(0);
               }}
             >
-              <Box size={16} /> Scanning station
+              <Box size={16} /> Quét đơn hàng
             </button>
             <button
               className={view === "history" ? "active" : ""}
@@ -541,13 +588,13 @@ export default function PackCheck() {
                 setPage(0);
               }}
             >
-              <History size={16} /> Scan history{" "}
+              <History size={16} /> Lịch sử quét{" "}
               <span>{number(totalScans)}</span>
             </button>
           </div>
           <span>
-            {sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound{" "}
-            {sound ? "on" : "off"}
+            {sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Âm thanh{" "}
+            {sound ? "bật" : "tắt"}
           </span>
         </div>
         {view === "station" && (
@@ -567,7 +614,7 @@ export default function PackCheck() {
                 }}
               >
                 <label htmlFor="manual">
-                  Manual entry <kbd>F2</kbd>
+                  Nhập mã thủ công <kbd>F2</kbd>
                 </label>
                 <div>
                   <input
@@ -575,7 +622,7 @@ export default function PackCheck() {
                     ref={manualInput}
                     value={manual}
                     onChange={(e) => setManual(e.target.value)}
-                    placeholder="Enter tracking code manually"
+                    placeholder="Nhập mã vận đơn"
                     autoComplete="off"
                     spellCheck={false}
                     disabled={!metadata || busy}
@@ -584,7 +631,7 @@ export default function PackCheck() {
                     className="button secondary"
                     disabled={!metadata || busy || !manual.trim()}
                   >
-                    Check parcel <ArrowRight size={16} />
+                    Kiểm tra <ArrowRight size={16} />
                   </button>
                 </div>
               </form>
@@ -592,7 +639,7 @@ export default function PackCheck() {
             <aside className="guide-panel">
               <div className="panel-heading">
                 <span>
-                  <ShieldCheck size={17} /> LISTEN. THEN HAND OVER.
+                  <ShieldCheck size={17} /> NGHE KẾT QUẢ RỒI BÀN GIAO
                 </span>
               </div>
               <div className="sound-guide success-guide">
@@ -600,12 +647,12 @@ export default function PackCheck() {
                   <Check size={25} />
                 </div>
                 <div>
-                  <span>ONE SHORT BEEP</span>
-                  <h3>The parcel can go.</h3>
+                  <span>ÂM BÁO “CÓ”</span>
+                  <h3>Có thể bàn giao.</h3>
                   <p>
-                    Order verified. First scan.
+                    Đơn hợp lệ. Quét lần đầu.
                     <br />
-                    Ready for the carrier.
+                    Sẵn sàng giao cho bên vận chuyển.
                   </p>
                 </div>
               </div>
@@ -614,27 +661,26 @@ export default function PackCheck() {
                   <X size={24} />
                 </div>
                 <div>
-                  <span>TWO WARNING BEEPS</span>
-                  <h3>Stop the parcel.</h3>
+                  <span>ÂM BÁO GIỮ LẠI</span>
+                  <h3>Giữ lại kiện hàng.</h3>
                   <p>
-                    Duplicate, cancelled, picked up,
+                    Đơn trùng, đã huỷ, đã lấy hàng
                     <br />
-                    or not in your order file.
+                    hoặc không có trong tệp đơn hàng.
                   </p>
                 </div>
               </div>
               <div className="guide-tip">
                 <Zap size={19} />
                 <p>
-                  <b>Keep your hands on the parcels.</b>USB scanners work
-                  automatically. No need to click between scans.
+                  <b>Quét liên tục, không cần bấm chuột. </b>Máy quét USB tự nhập mã sau mỗi lần quét.
                 </p>
               </div>
               <button
                 className="audio-test-link"
                 onClick={() => setDialog("settings")}
               >
-                <Volume2 size={15} /> Test scanner sounds{" "}
+                <Volume2 size={15} /> Thử âm thanh máy quét{" "}
                 <ArrowRight size={15} />
               </button>
             </aside>
@@ -644,12 +690,12 @@ export default function PackCheck() {
           <div className="history-heading">
             <div>
               <h2>
-                {view === "history" ? "Complete scan history" : "Recent scans"}
+                {view === "history" ? "Toàn bộ lịch sử quét" : "Lượt quét gần đây"}
                 <span>
-                  {view === "history" ? number(totalScans) : "Latest 20"}
+                  {view === "history" ? number(totalScans) : "20 lượt gần nhất"}
                 </span>
               </h2>
-              <p>Every check recorded, including parcels stopped.</p>
+              <p>Lưu mọi lượt kiểm tra, kể cả kiện bị giữ lại.</p>
             </div>
             {view === "station" ? (
               <button
@@ -658,14 +704,14 @@ export default function PackCheck() {
                   setPage(0);
                 }}
               >
-                View all history <ArrowRight size={15} />
+                Xem toàn bộ <ArrowRight size={15} />
               </button>
             ) : (
               <button
                 className="danger-text"
                 onClick={() => setDialog("reset")}
               >
-                Reset scan history
+                Xoá lịch sử quét
               </button>
             )}
           </div>
@@ -673,20 +719,20 @@ export default function PackCheck() {
             <table>
               <thead>
                 <tr>
-                  <th>TIME</th>
-                  <th>TRACKING CODE</th>
-                  <th>RESULT</th>
-                  <th>CARRIER</th>
+                  <th>THỜI GIAN</th>
+                  <th>MÃ VẬN ĐƠN</th>
+                  <th>KẾT QUẢ</th>
+                  <th>ĐƠN VỊ VẬN CHUYỂN</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      {new Date(item.scannedAt).toLocaleTimeString("en-GB")}
+                      {new Date(item.scannedAt).toLocaleTimeString("vi-VN")}
                       <small>
                         {view === "history" &&
-                          new Date(item.scannedAt).toLocaleDateString()}
+                          new Date(item.scannedAt).toLocaleDateString("vi-VN")}
                       </small>
                     </td>
                     <td className="mono">{item.trackingCode}</td>
@@ -707,35 +753,34 @@ export default function PackCheck() {
               <div>
                 <History size={23} />
               </div>
-              <h3>Your checks will appear here</h3>
-              <p>Import your order file and scan your first parcel.</p>
+              <h3>Lịch sử quét sẽ xuất hiện ở đây</h3>
+              <p>Nhập tệp đơn hàng và quét kiện đầu tiên.</p>
             </div>
           )}
           {view === "history" && (
             <div className="pagination">
               <button disabled={!page} onClick={() => setPage(page - 1)}>
-                <ChevronLeft size={17} /> Previous
+                <ChevronLeft size={17} /> Trước
               </button>
-              <span>Page {page + 1} · 50 per page</span>
+              <span>Trang {page + 1} · 50 lượt mỗi trang</span>
               <button
                 disabled={(page + 1) * 50 >= totalScans}
                 onClick={() => setPage(page + 1)}
               >
-                Next <ChevronRight size={17} />
+                Sau <ChevronRight size={17} />
               </button>
             </div>
           )}
         </section>
         <footer>
           <span>
-            <ShieldCheck size={14} /> Local-first. Private by design. No account
-            needed.
+            <ShieldCheck size={14} /> Dữ liệu đồng bộ giữa các thiết bị. Cần kết nối mạng để kiểm tra đơn.
           </span>
           <span>
-            SUCCESS BEEP = GO <i /> ERROR BEEP = STOP
+            “CÓ” = BÀN GIAO <i /> ÂM CẢNH BÁO = GIỮ LẠI
           </span>
           <span>
-            PACK CHECK <b>v1.0</b>
+            KIỂM ĐƠN <b>v1.0</b>
           </span>
         </footer>
       </main>
@@ -755,12 +800,12 @@ export default function PackCheck() {
             aria-modal="true"
             aria-label={
               dialog === "settings"
-                ? "Sound settings"
+                ? "Cài đặt âm thanh"
                 : dialog === "import"
-                  ? "Import Shopee file"
+                  ? "Nhập tệp Shopee"
                   : dialog === "reset"
-                    ? "Reset scan history"
-                    : "How to scan"
+                    ? "Xoá lịch sử quét"
+                    : dialog === "install" ? "Thêm vào màn hình chính" : "Hướng dẫn quét"
             }
             className="modal"
             onClick={(e) => e.stopPropagation()}
@@ -768,7 +813,7 @@ export default function PackCheck() {
             <button
               className="modal-close icon-button"
               disabled={busy}
-              aria-label="Close dialog"
+              aria-label="Đóng hộp thoại"
               onClick={() => {
                 setDialog(null);
                 setPending(undefined);
@@ -776,26 +821,43 @@ export default function PackCheck() {
             >
               <X size={20} />
             </button>
+            {dialog === "install" && (
+              <>
+                <div className="modal-icon"><Smartphone /></div>
+                <h2>Thêm vào màn hình chính</h2>
+                <p>Mở Kiểm đơn từ biểu tượng trên điện thoại. Cần kết nối mạng để đồng bộ và kiểm tra đơn.</p>
+                {installPrompt && (
+                  <button className="button primary" disabled={installing} onClick={() => void installApp()}>
+                    {installing ? "Đang mở yêu cầu cài đặt…" : "Cài ứng dụng"}
+                  </button>
+                )}
+                <ol className="help-list">
+                  <li><b>iPhone / iPad</b><p>Mở trang này bằng Safari → nhấn Chia sẻ → Thêm vào Màn hình chính → Thêm. Bật “Mở dưới dạng ứng dụng web” nếu có.</p></li>
+                  <li><b>Android</b><p>Mở trang này bằng Chrome → nhấn menu ⋮ → Thêm vào màn hình chính hoặc Cài đặt ứng dụng → xác nhận.</p></li>
+                </ol>
+                <p className="small-note">Nếu không thấy tuỳ chọn, hãy mở liên kết bằng Safari hoặc Chrome thay vì trình duyệt trong Zalo/Facebook. Trang cần sử dụng HTTPS để cài ứng dụng.</p>
+              </>
+            )}
             {dialog === "settings" && (
               <>
                 <div className="modal-icon">
                   <Volume2 />
                 </div>
-                <h2>Scanner sound</h2>
-                <p>Hear the decision before you look at the screen.</p>
+                <h2>Âm thanh máy quét</h2>
+                <p>Nghe âm báo để biết kết quả kiểm tra.</p>
                 <label className="setting-row">
-                  Sound feedback
+                  Âm báo kết quả
                   <button
                     className={`toggle ${sound ? "on" : ""}`}
                     role="switch"
                     aria-checked={sound}
                     onClick={() => saveAudio(!sound, volume)}
                   >
-                    {sound ? "ON" : "OFF"}
+                    {sound ? "BẬT" : "TẮT"}
                   </button>
                 </label>
                 <label className="volume-label" htmlFor="volume">
-                  Volume <b>{volume}%</b>
+                  Âm lượng <b>{volume}%</b>
                 </label>
                 <input
                   id="volume"
@@ -805,24 +867,23 @@ export default function PackCheck() {
                   value={volume}
                   onChange={(e) => saveAudio(sound, Number(e.target.value))}
                 />
-                <div className="test-buttons">
-                  <button
-                    className="button secondary"
-                    disabled={!sound}
-                    onClick={() => void audio.playSuccess().catch(audioError)}
-                  >
-                    Test OK Sound
-                  </button>
+                <div className="test-buttons" style={{ flexWrap: "wrap" }}>
+                  {(["ACCEPTED", "UNKNOWN", "CANCELLED", "DUPLICATE"] as const).map(status => (
+                    <button key={status} className="button secondary" disabled={!sound}
+                      onClick={() => void audio.playResult(status).catch(audioError)}>
+                      Thử: {{ ACCEPTED: "Có", UNKNOWN: "Không có", CANCELLED: "Đơn huỷ", DUPLICATE: "Đơn trùng" }[status]}
+                    </button>
+                  ))}
                   <button
                     className="button secondary"
                     disabled={!sound}
                     onClick={() => void audio.playError().catch(audioError)}
                   >
-                    Test Error Sound
+                    Thử âm cảnh báo
                   </button>
                 </div>
                 <p className="small-note">
-                  Settings are saved on this device. F8 toggles sound.
+                  Cài đặt được lưu trên thiết bị này. Nhấn F8 để bật/tắt âm thanh.
                 </p>
               </>
             )}
@@ -831,11 +892,11 @@ export default function PackCheck() {
                 <div className="modal-icon">
                   <FileSpreadsheet />
                 </div>
-                <h2>Start with this order file?</h2>
+                <h2>Sử dụng tệp đơn hàng này?</h2>
                 <p>
                   {pending.metadata.filename}
                   <br />
-                  {number(pending.metadata.total)} parcels found.
+                  {number(pending.metadata.total)} kiện hàng được tìm thấy.
                 </p>
                 <button
                   disabled={busy}
@@ -844,10 +905,9 @@ export default function PackCheck() {
                 >
                   <History />
                   <span>
-                    <b>Keep existing scan history</b>
+                    <b>Giữ lịch sử quét hiện có</b>
                     <small>
-                      Previously accepted parcels remain duplicates, even in
-                      this new file.
+                      Kiện đã được chấp nhận vẫn được đánh dấu trùng khi quét lại, kể cả trong tệp mới.
                     </small>
                   </span>
                   <ArrowRight />
@@ -859,10 +919,9 @@ export default function PackCheck() {
                 >
                   <Upload />
                   <span>
-                    <b>Clear history and start fresh</b>
+                    <b>Xoá lịch sử và bắt đầu lại</b>
                     <small>
-                      Permanently delete all scans and counters. Previously
-                      accepted parcels can pass again.
+                      Xoá vĩnh viễn lịch sử và bộ đếm. Kiện đã được chấp nhận có thể được chấp nhận lại.
                     </small>
                   </span>
                   <ArrowRight />
@@ -871,50 +930,44 @@ export default function PackCheck() {
             )}
             {dialog === "reset" && (
               <>
-                <h2>Reset scan history?</h2>
+                <h2>Xoá lịch sử quét?</h2>
                 <p>
-                  This permanently deletes all scan attempts, accepted tracking
-                  codes, and counters. Previously accepted parcels can be
-                  accepted again. Your imported order file stays available.
+                  Thao tác này xoá vĩnh viễn mọi lượt quét, mã đã chấp nhận và bộ đếm trên tất cả thiết bị. Kiện đã được chấp nhận có thể được chấp nhận lại. Tệp đơn hàng đã nhập vẫn được giữ.
                 </p>
                 <button
                   className="button danger"
                   disabled={busy}
                   onClick={() => void clearHistory()}
                 >
-                  {busy ? "Resetting…" : "Delete history and start fresh"}
+                  {busy ? "Đang xoá…" : "Xoá lịch sử và bắt đầu lại"}
                 </button>
               </>
             )}
             {dialog === "help" && (
               <>
-                <h2>Ready in three steps</h2>
+                <h2>Bắt đầu với ba bước</h2>
                 <ol className="help-list">
                   <li>
-                    <b>Import your Shopee Excel.</b>
+                    <b>Nhập tệp Excel Shopee.</b>
                     <p>
-                      Standard Vietnamese headers are detected automatically.
+                      Ứng dụng tự nhận diện tên cột tiếng Việt trong tệp Shopee.
                     </p>
                   </li>
                   <li>
-                    <b>Scan a shipping label.</b>
+                    <b>Quét mã trên nhãn vận chuyển.</b>
                     <p>
-                      Use a USB scanner ending with Enter, the rear camera, or
-                      manual entry (F2).
+                      Dùng máy quét USB có phím Enter cuối mã, camera sau hoặc nhập mã thủ công (F2).
                     </p>
                   </li>
                   <li>
-                    <b>Listen for the result.</b>
+                    <b>Nghe âm báo kết quả.</b>
                     <p>
-                      One bright beep: hand over. Two low beeps: stop and
-                      inspect.
+                      “Có”: bàn giao. “Không có”, “Đơn huỷ”, “Đơn trùng” hoặc hai tiếng bíp (đã lấy hàng): giữ lại và kiểm tra.
                     </p>
                   </li>
                 </ol>
                 <p className="small-note">
-                  Camera and PWA features need HTTPS or localhost. Data belongs
-                  to this browser and device. Keep Shopee exports current; order
-                  status is read from your imported file.
+                  Camera và tính năng thêm vào màn hình chính cần kết nối HTTPS (hoặc localhost). Dữ liệu được đồng bộ giữa các thiết bị qua máy chủ. Hãy nhập tệp Shopee mới nhất vì trạng thái đơn được đọc từ tệp đã nhập.
                 </p>
               </>
             )}

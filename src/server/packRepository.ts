@@ -1,3 +1,4 @@
+import { compareImports } from '../lib/importComparison';
 import type { PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { initializeDatabase, pool, table, transaction } from './database';
@@ -70,7 +71,16 @@ async function clearHistory(client: PoolClient) {
 export async function importDataset(data: Dataset, clear: boolean, id: string = randomUUID()) {
   return transaction(async client => {
     const previous = await prior(client, id, 'import'); if (previous) return previous;
-    await putOrders(client, data); if (clear) await clearHistory(client);
+    const workspace = await state(client);
+    // Compare under the same workspace lock as scans and replacement, before clearing history.
+    const comparison = workspace.metadata ? await (async () => {
+      const old = await client.query(`SELECT data FROM ${table('orders')}`);
+      const accepted = await client.query(`SELECT data FROM ${table('accepted')}`);
+      return { ...compareImports(old.rows.map(row => row.data), data.orders, accepted.rows.map(row => row.data)),
+        previousFilename: workspace.metadata.filename, comparedAt: Date.now(), historyCleared: clear };
+    })() : undefined;
+    await putOrders(client, { ...data, metadata: { ...data.metadata, comparison } });
+    if (clear) await clearHistory(client);
     const response = await state(client); await remember(client, id, 'import', response); return response;
   });
 }

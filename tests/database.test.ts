@@ -40,6 +40,17 @@ describe.skipIf(!process.env.DATABASE_URL)('PostgreSQL shared workspace (isolate
     expect((await repo.scanTrackingCode('VALID',randomUUID())).record.status).toBe('DUPLICATE');
     await repo.importDataset(data,true); expect((await repo.scanTrackingCode('VALID',randomUUID())).record.status).toBe('ACCEPTED');
   });
+  it('persists import warnings before a requested history reset and replays imports idempotently', async () => {
+    await repo.scanTrackingCode('VALID', randomUUID());
+    const changed = structuredClone(data); changed.orders[0].orderStatus = 'Đã hủy';
+    const id = randomUUID();
+    const result = await repo.importDataset(changed, true, id);
+    expect(result.metadata.comparison.issues).toMatchObject([{ trackingCode: 'VALID', kind: 'CANCELLED' }]);
+    expect(result.metadata.comparison.historyCleared).toBe(true);
+    expect((await repo.getState()).metadata.comparison).toEqual(result.metadata.comparison);
+    expect(await repo.getHistory(0, 20)).toHaveLength(0);
+    expect(await repo.importDataset(changed, true, id)).toEqual(result);
+  });
   it('migrates local accepted history once without replacing an existing workspace', async () => {
     await db.pool().query(`UPDATE ${db.table('workspace')} SET metadata=NULL WHERE id=1`);
     const history = [{ id: randomUUID(), trackingCode:'VALID',status:'ACCEPTED' as const,scannedAt:1000,firstScannedAt:1000,scanCount:1 }];

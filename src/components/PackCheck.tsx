@@ -21,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import Scanner from "./Scanner";
+import ImportReview from "./ImportReview";
 import ScanResult, { resultLabels } from "./ScanResult";
 import type { Dataset, ImportMetadata } from "../types/order";
 import {
@@ -533,6 +534,7 @@ export default function PackCheck() {
             </b>
           </div>
         )}
+        {metadata?.comparison && <ImportReview key={metadata.comparison.comparedAt} report={metadata.comparison} />}
         <div className="stats-grid">
           <div className="stat">
             <span>Tổng đơn hàng</span>

@@ -125,8 +125,8 @@ function parseShopeeFile(buffer, filename) {
             orders.set(order.trackingCode, order);
         }
     }
-    if (!found) throw new Error("This file does not appear to be a supported Shopee order export because the tracking-code column was not found.");
-    if (!orders.size) throw new Error("No tracking codes were found in this file. Import an export containing shipping labels.");
+    if (!found) throw new Error("Không tìm thấy cột Mã vận đơn. Vui lòng chọn tệp đơn hàng xuất từ Shopee.");
+    if (!orders.size) throw new Error("Tệp không có mã vận đơn. Vui lòng nhập tệp Shopee có thông tin vận chuyển.");
     const values = [
         ...orders.values()
     ];
@@ -161,7 +161,7 @@ self.onmessage = (event)=>{
         });
     } catch (error) {
         self.postMessage({
-            error: error instanceof Error ? error.message : "Unable to read Excel file."
+            error: error instanceof Error ? error.message : "Không đọc được tệp Excel."
         });
     }
 };

@@ -10,6 +10,7 @@ export interface ShopeeOrder {
   returnRefundStatus?: string;
 }
 export interface ImportMetadata {
+  comparison?: import("../lib/importComparison").ImportComparison;
   filename: string;
   importedAt: number;
   total: number;

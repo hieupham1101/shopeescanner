@@ -1301,3 +1301,16 @@ input[type="range"] {
   .scanner-bottom { flex-wrap: wrap; gap: 10px; height: auto; min-height: 64px; padding: 12px; }
   .modal { max-height: 85dvh; overflow-y: auto; }
 }
+
+.import-review { margin: 16px 0; padding: 20px; border: 1px solid #d5dbe5; border-radius: 12px; background: #fff; color: #243247; }
+.import-review h2 { margin: 0 0 8px; font-size: 18px; }
+.import-review p { margin: 8px 0; font-size: 13px; line-height: 1.6; }
+.review-counts, .review-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+.review-counts strong { color: #9a3412; }
+.import-review summary { cursor: pointer; font-weight: 600; padding: 10px 0; }
+.review-controls input, .review-controls select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; max-width: 100%; min-width: 0; }
+.review-controls input { flex: 1 1 240px; }
+.review-list { list-style: none; padding: 0; margin: 0; }
+.review-list li { display: grid; gap: 6px; padding: 14px 0; border-top: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+.review-list span { font-size: 13px; color: #475569; }
+.review-list b { font-size: 14px; color: #9a3412; }

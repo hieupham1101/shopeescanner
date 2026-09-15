@@ -1722,7 +1722,8 @@ footer b {
   background: #1b231d;
   border: 1px solid #455446;
   border-radius: 14px;
-  width: 480px;
+  width: min(480px, 100vw - 40px);
+  min-width: 0;
   max-width: 100%;
   max-height: 90vh;
   padding: 32px;
@@ -2262,6 +2263,160 @@ input[type="range"] {
     width: 65px;
     height: 65px;
   }
+}
+
+.install-banner {
+  background: #17231b;
+  border: 1px solid #35463c;
+  border-radius: 12px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  display: flex;
+}
+
+.install-banner > svg {
+  color: #b8e986;
+  flex-shrink: 0;
+}
+
+.install-banner > div {
+  flex: 1;
+}
+
+.install-banner strong {
+  font-size: 14px;
+}
+
+.install-banner p {
+  color: #a7b1aa;
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .install-banner {
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+
+  .install-banner > div {
+    min-width: 190px;
+  }
+
+  .install-banner .button {
+    white-space: normal;
+    width: 100%;
+  }
+
+  .manual-form input {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .workspace-tabs {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .history-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .scanner-bottom {
+    flex-wrap: wrap;
+    gap: 10px;
+    height: auto;
+    min-height: 64px;
+    padding: 12px;
+  }
+
+  .modal {
+    max-height: 85dvh;
+    overflow-y: auto;
+  }
+}
+
+.import-review {
+  color: #243247;
+  background: #fff;
+  border: 1px solid #d5dbe5;
+  border-radius: 12px;
+  margin: 16px 0;
+  padding: 20px;
+}
+
+.import-review h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.import-review p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.review-counts, .review-controls {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  display: flex;
+}
+
+.review-counts strong {
+  color: #9a3412;
+}
+
+.import-review summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+
+.review-controls input, .review-controls select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px;
+}
+
+.review-controls input {
+  flex: 240px;
+}
+
+.review-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-list li {
+  overflow-wrap: anywhere;
+  border-top: 1px solid #e2e8f0;
+  gap: 6px;
+  padding: 14px 0;
+  display: grid;
+}
+
+.review-list span {
+  color: #475569;
+  font-size: 13px;
+}
+
+.review-list b {
+  color: #9a3412;
+  font-size: 14px;
 }
 
 .placeholder\:text-slate-400::placeholder {

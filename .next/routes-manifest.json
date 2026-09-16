@@ -48,6 +48,12 @@
       "namedRegex": "^/api/health(?:/)?$"
     },
     {
+      "page": "/api/pack-check",
+      "regex": "^/api/pack\\-check(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/pack\\-check(?:/)?$"
+    },
+    {
       "page": "/app",
       "regex": "^/app(?:/)?$",
       "routeKeys": {},

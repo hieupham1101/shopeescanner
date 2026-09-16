@@ -111,3 +111,22 @@ export async function migrateLocalData(data: Dataset, history: ScanRecord[], id:
     const response = { migrated: true }; await remember(client, id, 'migrate', response); return response;
   });
 }
+
+export async function browseParcels(kind: 'orders' | 'scans', filter: string, query: string, carrier: string, offset: number, limit: number) {
+  await initializeDatabase();
+  const orders = kind === 'orders';
+  // A single statement keeps the count and page on the same database snapshot.
+  const source = orders
+    ? `SELECT o.tracking_code AS key, o.data AS item, a.data AS accepted FROM ${table('orders')} o LEFT JOIN ${table('accepted')} a USING (tracking_code)`
+    : `SELECT id::text AS key, data AS item, scanned_at FROM ${table('history')}`;
+  const condition = orders ? `($1 <> 'UNSCANNED' OR accepted IS NULL)` : `($1 = 'ALL' OR item->>'status' = $1)`;
+  const payload = orders ? `jsonb_build_object('order', item, 'acceptedAt', accepted->'firstScannedAt')` : `jsonb_build_object('scan', item)`;
+  const sort = orders ? 'key' : 'scanned_at DESC, key DESC';
+  const { rows } = await pool().query(`WITH source AS (${source}), filtered AS (
+    SELECT * FROM source WHERE ${condition}
+    AND ($2 = '' OR strpos(lower(concat_ws(' ', item->>'trackingCode', item->>'orderId')), lower($2)) > 0)
+    AND ($3 = '' OR strpos(lower(COALESCE(item->>'carrier', '')), lower($3)) > 0)
+  ), page AS (SELECT ${payload} AS data FROM filtered ORDER BY ${sort} LIMIT $4 OFFSET $5)
+  SELECT (SELECT count(*)::int FROM filtered) AS total, COALESCE((SELECT jsonb_agg(data) FROM page), '[]'::jsonb) AS rows`, [filter, query, carrier, limit, offset]);
+  return rows[0];
+}

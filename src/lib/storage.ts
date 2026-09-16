@@ -30,3 +30,8 @@ export async function commitScan(trackingCode: string, requestId: string) {
   try { return await request<{ record: ScanResult; counters: Counters }>('', body); }
   catch { return request<{ record: ScanResult; counters: Counters }>('', body); }
 }
+
+export function browseParcels(kind: import('../types/browse').BrowseKind, filter: import('../types/browse').BrowseFilter, query: string, carrier: string, page: number) {
+  const params = new URLSearchParams({ view: 'browse', kind, filter, query, carrier, offset: String(page * 50), limit: '50' });
+  return request<import('../types/browse').BrowseResult>('?' + params);
+}

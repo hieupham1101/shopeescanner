@@ -76,3 +76,7 @@ Before live handover, verify your physical USB scanner's Enter suffix, speaker a
 ## Import comparison
 
 The shared PostgreSQL workspace compares each replacement export with the previous orders and accepted scan state inside the import transaction. The latest report is saved with import metadata and remains visible after reload and across devices. It lists previously accepted parcels that are cancelled or absent in the new export, with search, filters, and pagination, plus the count of newly available unscanned parcels. Missing parcels require checking export scope; absence does not imply cancellation. Repeated imports retain warnings while accepted state exists. Choosing to clear history still produces the report before clearing; future imports then use the new accepted history. Reports are snapshots of the latest import, not live carrier status or a record of completed remediation.
+
+## Parcel lookup
+
+Click any statistics card to open its matching list. Total orders browses the current import; result cards browse scan events (one parcel can have multiple events). Search tracking/order codes and carrier names across the entire dataset before pagination. “Xem kiện chưa quét” shows imported parcels with no successful acceptance, including cancelled/picked-up orders which must still be checked. Expand a row to see details and copy its tracking code. Browsing is read-only and pauses USB acceptance until returning to the scan view. Use “Làm mới” to refresh the list after another operator changes data.

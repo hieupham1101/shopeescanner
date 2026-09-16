@@ -1314,3 +1314,18 @@ input[type="range"] {
 .review-list li { display: grid; gap: 6px; padding: 14px 0; border-top: 1px solid #e2e8f0; overflow-wrap: anywhere; }
 .review-list span { font-size: 13px; color: #475569; }
 .review-list b { font-size: 14px; color: #9a3412; }
+
+.stat-link { text-align: left; color: inherit; width: 100%; cursor: pointer; transition: border-color .15s, transform .15s; }
+.stat-link:hover { border-color: #a3d85e; transform: translateY(-2px); }
+.stat-link:focus-visible { outline: 2px solid #a3d85e; outline-offset: 3px; }
+.browse-shortcuts { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.browse-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px 20px; }
+.browse-toolbar label { display: grid; gap: 8px; flex: 1 1 180px; font-size: 13px; min-width: 0; }
+.browse-toolbar select { padding: 12px; border: 1px solid #465044; border-radius: 8px; background: #171e18; color: #e7eee6; min-height: 44px; }
+.browse-feedback { padding: 0 20px 16px; font-size: 14px; }
+.parcel-browser h2 { scroll-margin-top: 20px; }
+.parcel-browser .history-heading { flex-wrap: wrap; gap: 12px; }
+.parcel-browser .history-heading p { max-width: 720px; line-height: 1.6; }
+.parcel-browser summary { cursor: pointer; white-space: nowrap; }
+.parcel-detail { min-width: 220px; max-width: 360px; white-space: normal; line-height: 1.6; }
+.parcel-detail p { margin: 8px 0; }

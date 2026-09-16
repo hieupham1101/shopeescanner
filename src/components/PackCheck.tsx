@@ -21,6 +21,8 @@ import {
   Zap,
 } from "lucide-react";
 import Scanner from "./Scanner";
+import ParcelBrowser from "./ParcelBrowser";
+import type { BrowseFilter, BrowseKind } from "../types/browse";
 import ImportReview from "./ImportReview";
 import ScanResult, { resultLabels } from "./ScanResult";
 import type { Dataset, ImportMetadata } from "../types/order";
@@ -95,8 +97,14 @@ export default function PackCheck() {
   const [pending, setPending] = useState<Dataset>();
   const [sound, setSound] = useState(true),
     [volume, setVolume] = useState(65);
-  const [view, setView] = useState<"station" | "history">("station"),
+  const [view, setView] = useState<"station" | "history" | "browse">("station"),
     [page, setPage] = useState(0);
+  const [browse, setBrowse] = useState<{ kind: BrowseKind; filter: BrowseFilter; key: number }>({ kind: 'orders', filter: 'ALL', key: 0 });
+  function openBrowse(kind: BrowseKind, filter: BrowseFilter) {
+    setBrowse(previous => ({ kind, filter, key: previous.key + 1 }));
+    setResult(null);
+    setView('browse');
+  }
   const [manual, setManual] = useState("");
   const [checking, setChecking] = useState(false);
   const processor = useRef<ScanProcessor | undefined>(undefined);
@@ -169,6 +177,7 @@ export default function PackCheck() {
   const processScan = useCallback(
     (code: string, source: ScanSource = "manual") => {
       if (
+        view === "browse" ||
         storageFailed.current ||
         blocked.current ||
         !processor.current ||
@@ -536,11 +545,11 @@ export default function PackCheck() {
         )}
         {metadata?.comparison && <ImportReview key={metadata.comparison.comparedAt} report={metadata.comparison} />}
         <div className="stats-grid">
-          <div className="stat">
+          <button type="button" className="stat stat-link" onClick={() => openBrowse("orders", "ALL")} aria-label="Xem tổng đơn hàng">
             <span>Tổng đơn hàng</span>
             <strong>{number(metadata?.total ?? 0)}</strong>
-            <small>Trong tệp Shopee hiện tại</small>
-          </div>
+            <small>Trong tệp Shopee · Xem danh sách →</small>
+          </button>
           {(
             [
               "ACCEPTED",
@@ -550,7 +559,7 @@ export default function PackCheck() {
               "UNKNOWN",
             ] as const
           ).map((status) => (
-            <div className={`stat stat-${status}`} key={status}>
+            <button type="button" className={`stat stat-link stat-${status}`} key={status} onClick={() => openBrowse("scans", status)}>
               <span>
                 <i />
                 {
@@ -566,12 +575,17 @@ export default function PackCheck() {
               <strong>{number(counters[status])}</strong>
               <small>
                 {status === "ACCEPTED"
-                  ? "Đủ điều kiện bàn giao"
-                  : "Kiện cần giữ lại"}
+                  ? "Lượt quét thành công · Xem →"
+                  : "Lượt quét cần kiểm tra · Xem →"}
               </small>
-            </div>
+            </button>
           ))}
         </div>
+        <div className="browse-shortcuts">
+          <button className="button secondary" onClick={() => openBrowse('orders', 'UNSCANNED')}>Xem kiện chưa quét</button>
+          <button className="button secondary" onClick={() => openBrowse('scans', 'ALL')}>Tìm trong lịch sử quét</button>
+        </div>
+        {view === 'browse' && <ParcelBrowser key={browse.key} kind={browse.kind} initialFilter={browse.filter} onClose={() => setView('station')} />}
         <div className="workspace-tabs">
           <div>
             <button
@@ -688,7 +702,7 @@ export default function PackCheck() {
             </aside>
           </div>
         )}
-        <section className="history-panel">
+        {view !== "browse" && <section className="history-panel">
           <div className="history-heading">
             <div>
               <h2>
@@ -773,7 +787,7 @@ export default function PackCheck() {
               </button>
             </div>
           )}
-        </section>
+        </section>}
         <footer>
           <span>
             <ShieldCheck size={14} /> Dữ liệu đồng bộ giữa các thiết bị. Cần kết nối mạng để kiểm tra đơn.

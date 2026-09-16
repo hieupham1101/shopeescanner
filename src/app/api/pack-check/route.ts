@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getState, getHistory, scanTrackingCode, importDataset, clearScanHistory, migrateLocalData, RequestError } from '../../../server/packRepository';
+import { getState, getHistory, browseParcels, scanTrackingCode, importDataset, clearScanHistory, migrateLocalData, RequestError } from '../../../server/packRepository';
 import { normalizeTrackingCode } from '../../../lib/normalization';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,16 @@ function failure(error: unknown) {
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
+    if (url.searchParams.get('view') === 'browse') {
+      const params = url.searchParams;
+      const kind = z.enum(['orders', 'scans']).parse(params.get('kind') ?? 'orders');
+      const filter = (kind === 'orders' ? z.enum(['ALL', 'UNSCANNED']) : z.enum(['ALL', 'ACCEPTED', 'DUPLICATE', 'CANCELLED', 'PICKED_UP', 'UNKNOWN'])).parse(params.get('filter') ?? 'ALL');
+      const query = z.string().max(512).parse(params.get('query') ?? '').trim();
+      const carrier = z.string().max(512).parse(params.get('carrier') ?? '').trim();
+      const offset = z.coerce.number().int().min(0).max(10000000).parse(params.get('offset') ?? 0);
+      const limit = z.coerce.number().int().min(1).max(100).parse(params.get('limit') ?? 50);
+      return json(await browseParcels(kind, filter, query, carrier, offset, limit));
+    }
     if (url.searchParams.get('view') === 'history') {
       const offset = z.coerce.number().int().min(0).max(10000000).parse(url.searchParams.get('offset') ?? 0);
       const limit = z.coerce.number().int().min(1).max(100).parse(url.searchParams.get('limit') ?? 20);

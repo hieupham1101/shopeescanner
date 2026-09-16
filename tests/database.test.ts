@@ -58,6 +58,21 @@ describe.skipIf(!process.env.DATABASE_URL)('PostgreSQL shared workspace (isolate
     const duplicate = await repo.scanTrackingCode('VALID',randomUUID()); expect(duplicate.record.status).toBe('DUPLICATE'); expect(duplicate.record.firstScannedAt).toBe(1000);
     expect(await repo.migrateLocalData(data,history,randomUUID())).toEqual({migrated:false});
   });
+  it('browses all matching records before pagination and handles literal search characters', async () => {
+    await repo.scanTrackingCode('VALID', randomUUID());
+    await repo.scanTrackingCode('VALID', randomUUID());
+    await repo.scanTrackingCode('VALID', randomUUID());
+    const duplicates = await repo.browseParcels('scans', 'DUPLICATE', 'valid', 'spx', 0, 1);
+    expect(duplicates.total).toBe(2);
+    expect(duplicates.rows).toHaveLength(1);
+    expect(duplicates.rows[0].scan.status).toBe('DUPLICATE');
+    const remaining = await repo.browseParcels('orders', 'UNSCANNED', '', '', 0, 50);
+    expect(remaining.total).toBe(2);
+    expect(remaining.rows.every((row: { order: { trackingCode: string } }) => row.order.trackingCode !== 'VALID')).toBe(true);
+    expect((await repo.browseParcels('orders', 'ALL', 'O1', '', 0, 50)).total).toBe(1);
+    expect((await repo.browseParcels('orders', 'ALL', '%', '', 0, 50)).total).toBe(0);
+    expect((await repo.browseParcels('scans', 'DUPLICATE', '', '', 100, 50))).toEqual({ total: 2, rows: [] });
+  });
   it('imports 50,000 rows and uses the tracking primary-key lookup', async () => {
     const large = { ...data, orders:Array.from({length:50000},(_,i)=>({orderId:`O${i}`,trackingCode:`SPX${i}`,orderStatus:'Chờ giao hàng'})) };
     await repo.importDataset(large,true); expect((await repo.getState()).metadata.total).toBe(50000);

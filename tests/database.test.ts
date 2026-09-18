@@ -27,11 +27,15 @@ describe.skipIf(!process.env.DATABASE_URL)('PostgreSQL shared workspace (isolate
     expect(retry).toEqual(first); expect(await repo.getHistory(0,20)).toHaveLength(1);
     await repo.clearScanHistory(); expect((await repo.scanTrackingCode('VALID', id)).record.id).toBe(id); expect(await repo.getHistory(0,20)).toHaveLength(0);
   });
-  it('server applies current status priority, regardless of previous acceptance', async () => {
-    await repo.scanTrackingCode('VALID', randomUUID());
+  it('detects duplicates after pickup while cancellation retains priority', async () => {
+    const first = await repo.scanTrackingCode('VALID', randomUUID());
     for (const [tracking, status] of [['MISSING','UNKNOWN'],['CANCELLED','CANCELLED'],['PICKED','PICKED_UP']]) expect((await repo.scanTrackingCode(tracking,randomUUID())).record.status).toBe(status);
     const changed = structuredClone(data); changed.orders[0].orderStatus='Đang giao'; await repo.importDataset(changed,false);
-    expect((await repo.scanTrackingCode('VALID',randomUUID())).record.status).toBe('PICKED_UP');
+    const requestId = randomUUID();
+    const duplicate = await repo.scanTrackingCode('VALID',requestId);
+    expect(duplicate.record).toMatchObject({ status: 'DUPLICATE', firstScannedAt: first.record.scannedAt, scanCount: 2 });
+    expect(await repo.scanTrackingCode('VALID', requestId)).toEqual(duplicate);
+    expect((await repo.getState()).counters).toMatchObject({ ACCEPTED: 1, DUPLICATE: 1, PICKED_UP: 1 });
     changed.orders[0].cancellationReason='Buyer cancelled'; await repo.importDataset(changed,false);
     expect((await repo.scanTrackingCode('VALID',randomUUID())).record.status).toBe('CANCELLED');
   });

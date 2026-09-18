@@ -58,22 +58,24 @@ export async function commitScan(
 ): Promise<{ record: ScanRecord; counters: Counters }> {
   const database = await db();
   const tx = database.transaction(["accepted", "history", "meta"], "readwrite");
-  if (record.status === "ACCEPTED") {
+  if (record.status === "ACCEPTED" || record.status === "PICKED_UP") {
     const existing = await tx.objectStore("accepted").get(record.trackingCode);
-    record = {
-      ...record,
-      status: existing ? "DUPLICATE" : "ACCEPTED",
-      firstScannedAt: existing?.firstScannedAt ?? record.scannedAt,
-      scanCount: (existing?.scanCount ?? 0) + 1,
-    };
-    await tx
-      .objectStore("accepted")
-      .put({
-        trackingCode: record.trackingCode,
-        firstScannedAt: record.firstScannedAt!,
-        lastScannedAt: record.scannedAt,
-        scanCount: record.scanCount!,
-      });
+    if (record.status === "ACCEPTED" || existing) {
+      record = {
+        ...record,
+        status: existing ? "DUPLICATE" : "ACCEPTED",
+        firstScannedAt: existing?.firstScannedAt ?? record.scannedAt,
+        scanCount: (existing?.scanCount ?? 0) + 1,
+      };
+      await tx
+        .objectStore("accepted")
+        .put({
+          trackingCode: record.trackingCode,
+          firstScannedAt: record.firstScannedAt!,
+          lastScannedAt: record.scannedAt,
+          scanCount: record.scanCount!,
+        });
+    }
   }
   const counters =
     ((await tx.objectStore("meta").get("counters")) as Counters) ??

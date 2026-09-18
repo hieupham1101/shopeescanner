@@ -40,7 +40,8 @@ export async function scanTrackingCode(rawCode: string, requestId: string) {
     const order = lookup.rows[0].order as ShopeeOrder | undefined;
     const accepted = lookup.rows[0].accepted as AcceptedState | undefined;
     const availability = order ? determineOrderStatus(order) : null;
-    const status = !order ? 'UNKNOWN' : availability !== 'AVAILABLE' ? availability! : accepted ? 'DUPLICATE' : 'ACCEPTED';
+    // A carrier status update must not hide an earlier warehouse scan.
+    const status = !order ? 'UNKNOWN' : availability === 'CANCELLED' ? 'CANCELLED' : accepted ? 'DUPLICATE' : availability === 'PICKED_UP' ? 'PICKED_UP' : 'ACCEPTED';
     const scannedAt = Date.now();
     const record: ScanResult = { id: requestId, trackingCode, status, scannedAt, order: order || undefined, orderId: order?.orderId, carrier: order?.carrier };
     if (status === 'ACCEPTED' || status === 'DUPLICATE') {

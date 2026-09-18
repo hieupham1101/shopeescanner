@@ -125,11 +125,11 @@ describe("scan business rules and persistence", () => {
       "DUPLICATE",
     ]);
   });
-  it("new cancellation or pickup overrides historical acceptance", async () => {
+  it("cancellation wins but pickup preserves duplicate detection after acceptance", async () => {
     await engine().processScan("VALID");
     for (const [status, expected] of [
       ["Đã hủy", "CANCELLED"],
-      ["Đang giao", "PICKED_UP"],
+      ["Đang giao", "DUPLICATE"],
     ])
       expect(
         (

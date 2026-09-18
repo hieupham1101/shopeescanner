@@ -60,8 +60,9 @@ export default function ScanResult({
       )}
       {result.status === "DUPLICATE" && (
         <p>
+          Trạng thái trong tệp: {result.order?.orderStatus || "Chưa có thông tin"}<br />
           Đã quét lúc:{" "}
-          {new Date(result.firstScannedAt!).toLocaleTimeString("vi-VN")} · Số lần quét:{" "}
+          {new Date(result.firstScannedAt!).toLocaleString("vi-VN")} · Số lần quét:{" "}
           {result.scanCount}
         </p>
       )}

@@ -33,11 +33,12 @@ Replacing a file offers **keep history** or **clear history and start fresh**. H
 
 ## Rules and data
 
-The central pipeline normalizes tracking codes and uses a `Map` lookup. Priority: UNKNOWN → CANCELLED → PICKED_UP → DUPLICATE → ACCEPTED.
+Scan priority: UNKNOWN → CANCELLED → DUPLICATE → PICKED_UP → ACCEPTED.
 
 - `Đã hủy` or a meaningful cancellation reason stops a parcel.
 - `Đang giao` is the pickup indicator. Shipping date alone is not.
 - Only previously accepted codes become business duplicates. Failed attempts remain in history without entering accepted state.
+- Previously accepted codes still report duplicates after handover or an imported update to `Đang giao`, preserving the first scan time and scan count. Keep history when replacing the export to retain this check.
 - Camera detections of the same code are ignored until it has been absent for at least 1.5 seconds. USB/manual scans never use this camera filter.
 - A single IndexedDB transaction saves accepted state, scan history, and counters before returning a result and playing a tone. Concurrent checks cannot both accept the same parcel.
 - Missing optional columns are tolerated. A missing tracking-code column is an import error.
